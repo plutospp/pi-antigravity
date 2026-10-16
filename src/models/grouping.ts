@@ -335,6 +335,9 @@ function familyTemplate(
   publicId: string,
   fallbackModels: ProviderModelConfig[],
 ): ProviderModelConfig | undefined {
+  if (/^gemini-.*-argon/i.test(publicId)) {
+    return fallbackModels.find((model) => /^gemini-.*-argon/i.test(model.id));
+  }
   if (/^gemini-.*-flash/i.test(publicId)) {
     return fallbackModels.find((model) => /^gemini-.*-flash/i.test(model.id));
   }

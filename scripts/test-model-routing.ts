@@ -91,8 +91,8 @@ const routeCases: Array<[string, string | undefined, string]> = [
   ["gemini-3.1-pro", "medium", "gemini-3.1-pro-low"],
   ["gemini-3.1-pro", "high", "gemini-pro-agent"],
   ["gemini-3.1-pro", "xhigh", "gemini-pro-agent"],
-  ["claude-sonnet-4-6", "xhigh", "claude-sonnet-4-6"],
-  ["claude-opus-4-6", "high", "claude-opus-4-6-thinking"],
+  ["claude-sonnet-5-5", "xhigh", "claude-sonnet-5-5"],
+  ["claude-opus-5-5", "high", "claude-opus-5-5-thinking"],
   ["gpt-oss-120b", "high", "gpt-oss-120b-medium"],
   ["unknown-model", "high", "unknown-model"],
 ];
@@ -103,13 +103,14 @@ for (const [model, effort, expected] of routeCases) {
 
 const modelIds = new Set(ANTIGRAVITY_MODELS.map((model) => model.id));
 const expectedModels = [
+  "gemini-4-argon",
   "gemini-3.8-flash",
   "gemini-3.7-flash",
   "gemini-3.6-flash",
   "gemini-3.5-flash",
   "gemini-3.1-pro",
-  "claude-sonnet-4-6",
-  "claude-opus-4-6",
+  "claude-sonnet-5-5",
+  "claude-opus-5-5",
   "gpt-oss-120b",
 ];
 assert.equal(
@@ -122,13 +123,14 @@ for (const expected of expectedModels) {
 }
 
 const expectedThinkingLevels: Record<string, string[]> = {
+  "gemini-4-argon": ["low", "medium", "high"],
   "gemini-3.8-flash": ["low", "medium", "high"],
   "gemini-3.7-flash": ["low", "medium", "high"],
   "gemini-3.6-flash": ["low", "medium", "high"],
   "gemini-3.5-flash": ["low", "medium", "high"],
   "gemini-3.1-pro": ["low", "high"],
-  "claude-opus-4-6": ["high"],
-  "claude-sonnet-4-6": ["high"],
+  "claude-opus-5-5": ["high"],
+  "claude-sonnet-5-5": ["high"],
   "gpt-oss-120b": ["medium"],
 };
 for (const configuredModel of ANTIGRAVITY_MODELS) {
@@ -778,7 +780,7 @@ const context = {
   ],
 } as Context;
 
-const contents = convertMessages(model, context, "claude-sonnet-4-6");
+const contents = convertMessages(model, context, "claude-sonnet-5-5");
 assert.equal(contents.length, 3);
 assert.equal(contents[0]?.role, "user");
 assert.deepEqual(contents[1]?.parts[0], { thought: true, text: "plan" });
@@ -835,7 +837,7 @@ const consecutiveContext = {
     },
   ],
 } as Context;
-const mergedContents = convertMessages(model, consecutiveContext, "claude-sonnet-4-6");
+const mergedContents = convertMessages(model, consecutiveContext, "claude-sonnet-5-5");
 assert.equal(mergedContents.length, 3);
 assert.equal(mergedContents[0]?.role, "user");
 assert.equal(mergedContents[0]?.parts.length, 2);
@@ -896,7 +898,7 @@ const dummyContext: Context = {
 };
 
 // Case A: Omitted maxTokens -> uses model's max output token limit
-const reqA = buildRequest(model, dummyContext, "test-proj", {}, "claude-sonnet-4-6");
+const reqA = buildRequest(model, dummyContext, "test-proj", {}, "claude-sonnet-5-5");
 assert.equal(reqA.request.generationConfig?.maxOutputTokens, 64000);
 
 // Case B: Oversized maxTokens (e.g. 100000) -> clamped to model ceiling
@@ -1195,7 +1197,7 @@ const crossThinkingContext = {
       ],
       api: "anthropic-messages",
       provider: "anthropic",
-      model: "claude-opus-4-6",
+      model: "claude-opus-5-5",
       usage: zeroUsage,
       stopReason: "stop",
       timestamp: Date.now(),
@@ -1426,7 +1428,7 @@ assert.match(fallbackPersona.request.systemInstruction.parts[0]?.text || "", /Yo
 const flashCost = ANTIGRAVITY_MODELS.find((m) => m.id === "gemini-3.7-flash")?.cost;
 assert.equal(flashCost?.input, 0.1);
 assert.equal(flashCost?.output, 0.4);
-const opusCost = ANTIGRAVITY_MODELS.find((m) => m.id === "claude-opus-4-6")?.cost;
+const opusCost = ANTIGRAVITY_MODELS.find((m) => m.id === "claude-opus-5-5")?.cost;
 assert.equal(opusCost?.input, 15);
 assert.equal(opusCost?.output, 75);
 
@@ -1473,7 +1475,7 @@ assert.equal(envDefault.labels.last_execution_id, undefined);
 assert.equal(envDefault.labels.model_enum, "MODEL_PLACEHOLDER_M298");
 assert.match(envDefault.requestId, /^agent\/[0-9a-f-]+\/\d+\/[0-9a-f-]+\/1$/);
 
-const envClaude = antigravityRequestEnvelope("claude-sonnet-4-6", true);
+const envClaude = antigravityRequestEnvelope("claude-sonnet-5-5", true);
 assert.equal(envClaude.labels.last_step_index, "0");
 assert.equal(envClaude.labels.used_claude, "true");
 assert.equal(envClaude.labels.used_claude_conservative, "true");
@@ -1505,8 +1507,8 @@ const envSubsequentWithOverride = antigravityRequestEnvelope("gemini-3.7-flash-h
 assert.equal(envSubsequentWithOverride.labels.last_execution_id, "custom-id-on-step-2");
 
 // 2. buildRequest wire labels across models
-const claudeSonnetModel = ANTIGRAVITY_MODELS.find((m) => m.id === "claude-sonnet-4-6")!;
-const claudeOpusModel = ANTIGRAVITY_MODELS.find((m) => m.id === "claude-opus-4-6")!;
+const claudeSonnetModel = ANTIGRAVITY_MODELS.find((m) => m.id === "claude-sonnet-5-5")!;
+const claudeOpusModel = ANTIGRAVITY_MODELS.find((m) => m.id === "claude-opus-5-5")!;
 const gptOssModel = ANTIGRAVITY_MODELS.find((m) => m.id === "gpt-oss-120b")!;
 const pro31Model = ANTIGRAVITY_MODELS.find((m) => m.id === "gemini-3.1-pro")!;
 
@@ -1684,13 +1686,13 @@ assert.equal(reqPro.request.labels?.model_enum, "MODEL_PLACEHOLDER_M16");
 assert.equal(reqPro.request.labels?.used_claude, "false");
 assert.equal(reqPro.request.labels?.used_non_gemini_model, "false");
 
-const reqSonnet = buildRequest(claudeSonnetModel, dummyContext, "test-proj", {}, "claude-sonnet-4-6");
+const reqSonnet = buildRequest(claudeSonnetModel, dummyContext, "test-proj", {}, "claude-sonnet-5-5");
 assert.equal(reqSonnet.request.labels?.used_claude, "true");
 assert.equal(reqSonnet.request.labels?.used_claude_conservative, "true");
 assert.equal(reqSonnet.request.labels?.used_non_gemini_model, "true");
 assert.equal(reqSonnet.request.labels?.model_enum, "MODEL_PLACEHOLDER_M35");
 
-const reqOpus = buildRequest(claudeOpusModel, dummyContext, "test-proj", {}, "claude-opus-4-6-thinking");
+const reqOpus = buildRequest(claudeOpusModel, dummyContext, "test-proj", {}, "claude-opus-5-5-thinking");
 assert.equal(reqOpus.request.labels?.used_claude, "true");
 assert.equal(reqOpus.request.labels?.used_non_gemini_model, "true");
 assert.equal(reqOpus.request.labels?.model_enum, "MODEL_PLACEHOLDER_M26");
