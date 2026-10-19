@@ -196,6 +196,12 @@ export function isUsableRuntimeModelId(id: string): boolean {
 
 function buildModelMatchRegex(requestedId: string): RegExp {
   const req = requestedId.toLowerCase();
+  if (req === "gemini-4-argon-low") return /gemini[- ]4[- ]argon \(low\)/i;
+  if (req === "gemini-4-argon-medium") return /gemini[- ]4[- ]argon \(medium\)/i;
+  if (req === "gemini-4-argon-high") return /gemini[- ]4[- ]argon \(high\)/i;
+  if (req.includes("claude-opus-5-5")) return /claude.*opus.*5\.5/i;
+  if (req.includes("claude-sonnet-5-5")) return /claude.*sonnet.*5\.5/i;
+
   // Display names from fetchAvailableModels (keys are the real runtime ids):
   //   gemini-3.8-flash-low       → "Gemini 3.8 Flash (Low)"
   //   gemini-3.8-flash-medium    → "Gemini 3.8 Flash (Medium)"
@@ -223,8 +229,7 @@ function buildModelMatchRegex(requestedId: string): RegExp {
     return /gemini[- ]3\.5[- ]flash \(medium\)/i;
   if (req === "gemini-3.5-flash-high" || req === "gemini-3-flash-agent")
     return /gemini[- ]3\.5[- ]flash \(high\)/i;
-  if (req.includes("claude-opus-4-6")) return /claude.*opus.*4\.6/i;
-  if (req.includes("claude-sonnet-4-6")) return /claude.*sonnet.*4\.6/i;
+
   if (req.includes("gpt-oss-120b")) return /gpt.*oss.*120b/i;
   if (req === "gemini-3.1-pro-low") return /gemini[- ]3\.1[- ]pro \(low\)/i;
   if (req === "gemini-3.1-pro-high" || req === "gemini-pro-agent")

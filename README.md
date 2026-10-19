@@ -56,7 +56,7 @@ Restart Pi (or run `/reload`) after installation. To update the npm package late
 3. Select a model, for example:
 
    ```text
-   /model antigravity/gemini-3.8-flash
+   /model antigravity/gemini-4-argon
    ```
 
 4. Start working. If a request fails, run `/antigravity.doctor` for sanitized diagnostics.
@@ -138,24 +138,25 @@ The native API returns in-memory image/text blocks and does not save files. Inpu
 
 After you sign in, the provider refreshes its catalog from Antigravity (`fetchAvailableModels`) and groups runtime thinking variants into public Pi model IDs. Newly enabled models — for example a new Gemini Flash generation — become selectable after that refresh without waiting for an extension release. A last-known-good cache is kept for offline/cold start; the static table below is only the conservative fallback and a routing reference.
 
-Use `/antigravity.models` to see live availability and quota for your account. Runtime names such as `gemini-3.8-flash-low` / `-medium` / `-high` collapse to `gemini-3.8-flash` with those thinking levels. The conservative static entries remain selectable when an account's authenticated catalog omits them.
+Use `/antigravity.models` to see live availability and quota for your account. Runtime names such as `gemini-4-argon-low` / `-medium` / `-high` collapse to `gemini-4-argon` with those thinking levels. The conservative static entries remain selectable when an account's authenticated catalog omits them.
 
 ### Why Claude and GPT-OSS appear
 
 Antigravity / Cloud Code Assist exposes a multi-provider catalog. Depending on your account, its Google-authenticated API can advertise Google Gemini models alongside Claude models served through Anthropic Vertex and GPT-OSS served through OpenAI Vertex. This extension intentionally exposes those advertised Claude and GPT-OSS models through the single `antigravity` provider; they are not separate Pi providers and do not use a separate Anthropic or OpenAI login.
 
-The backend's display labels do not always match its runtime IDs. For example, `gemini-3.5-flash-extra-low`, `gemini-3.5-flash-low`, and `gemini-3-flash-agent` can be displayed as Gemini 3.5 Flash Low, Medium, and High. All supported models send integer `thinkingBudget` (Gemini 3.8/3.7/3.6: -1/4000/1000/0, Gemini 3.5: 10000/4000/1000/0, Gemini 3.1 Pro: 10001/1001/0, Claude: 1024/0, GPT-OSS: 8192/0) matching the official Antigravity CLI wire format.
+The backend's display labels do not always match its runtime IDs. For example, `gemini-3.5-flash-extra-low`, `gemini-3.5-flash-low`, and `gemini-3-flash-agent` can be displayed as Gemini 3.5 Flash Low, Medium, and High. All supported models send integer `thinkingBudget` (Gemini 4/3.8/3.7/3.6: -1/4000/1000/0, Gemini 3.5: 10000/4000/1000/0, Gemini 3.1 Pro: 10001/1001/0, Claude: 1024/0, GPT-OSS: 8192/0) matching the official Antigravity CLI wire format.
 
 <!-- prettier-ignore -->
 | Public model ID | Input | Thinking levels shown | Max output tokens | Request routing |
 | --- | --- | --- | --- | --- |
+| `gemini-4-argon` | Text, image | Low, Medium, High | 65,536 | low → `gemini-4-argon-low`; medium → `gemini-4-argon-medium`; high → `gemini-4-argon-high` |
 | `gemini-3.8-flash` | Text, image | Low, Medium, High | 65,536 | low → `gemini-3.8-flash-low`; medium → `gemini-3.8-flash-medium`; high → `gemini-3.8-flash-high` |
 | `gemini-3.7-flash` | Text, image | Low, Medium, High | 65,536 | low → `gemini-3.7-flash-low`; medium → `gemini-3.7-flash-medium`; high → `gemini-3.7-flash-high` |
 | `gemini-3.6-flash` | Text, image | Low, Medium, High | 65,536 | low → `gemini-3.6-flash-low`; medium → `gemini-3.6-flash-medium`; high → `gemini-3.6-flash-high` |
 | `gemini-3.5-flash` | Text, image | Low, Medium, High | 65,536 | low → `gemini-3.5-flash-extra-low`; medium → `gemini-3.5-flash-low`; high → `gemini-3-flash-agent` |
 | `gemini-3.1-pro` | Text, image | Low, High | 65,535 | low → `gemini-3.1-pro-low`; high → `gemini-pro-agent` |
-| `claude-sonnet-4-6` | Text, image | High | 64,000 | high → `claude-sonnet-4-6` |
-| `claude-opus-4-6` | Text, image | High | 64,000 | high → `claude-opus-4-6-thinking` |
+| `claude-sonnet-5-5` | Text, image | High | 64,000 | high → `claude-sonnet-5-5` |
+| `claude-opus-5-5` | Text, image | High | 64,000 | high → `claude-opus-5-5-thinking` |
 | `gpt-oss-120b` | Text | Medium | 32,768 | medium → `gpt-oss-120b-medium` |
 
 To limit which models Pi cycles through, enable specific entries in `~/.pi/agent/settings.json`:
@@ -163,12 +164,13 @@ To limit which models Pi cycles through, enable specific entries in `~/.pi/agent
 ```json
 {
   "models": {
+    "antigravity/gemini-4-argon": { "enabled": true },
     "antigravity/gemini-3.8-flash": { "enabled": true },
     "antigravity/gemini-3.7-flash": { "enabled": true },
     "antigravity/gemini-3.6-flash": { "enabled": true },
     "antigravity/gemini-3.5-flash": { "enabled": true },
     "antigravity/gemini-3.1-pro": { "enabled": true },
-    "antigravity/claude-sonnet-4-6": { "enabled": true }
+    "antigravity/claude-sonnet-5-5": { "enabled": true }
   }
 }
 ```
@@ -202,7 +204,7 @@ By default, the provider tries `https://daily-cloudcode-pa.googleapis.com`, then
 
 ### Latency
 
-Provider requests reuse a keep-alive connection pool when the runtime supports it, so consecutive turns do not repeat the DNS, TCP, and TLS handshake. When `HTTP_PROXY`, `HTTPS_PROXY`, or `ALL_PROXY` is set, that pool is skipped so Pi's proxy-aware dispatcher is used instead. The connection is opened on the first Antigravity request rather than at Pi startup, so other extensions are not stalled by an unauthenticated handshake. For the lowest time-to-first-token, pick a fast runtime: `gemini-3.8-flash` with reasoning off routes to `gemini-3.8-flash-low` at thinking level `LOW`. Setting `ANTIGRAVITY_PROJECT_ID` also removes the project-discovery round-trip when credentials do not already carry a project ID.
+Provider requests reuse a keep-alive connection pool when the runtime supports it, so consecutive turns do not repeat the DNS, TCP, and TLS handshake. When `HTTP_PROXY`, `HTTPS_PROXY`, or `ALL_PROXY` is set, that pool is skipped so Pi's proxy-aware dispatcher is used instead. The connection is opened on the first Antigravity request rather than at Pi startup, so other extensions are not stalled by an unauthenticated handshake. For the lowest time-to-first-token, pick a fast runtime: `gemini-4-argon` with reasoning off routes to `gemini-4-argon-low` at thinking level `LOW`. Setting `ANTIGRAVITY_PROJECT_ID` also removes the project-discovery round-trip when credentials do not already carry a project ID.
 
 ## Troubleshooting
 

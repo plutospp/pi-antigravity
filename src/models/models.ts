@@ -23,26 +23,26 @@ export const PROVIDER_NAME = "Antigravity";
  * advertised by the backend for each model.
  */
 export const ANTIGRAVITY_ROUTING: Record<string, AntigravityRouting> = {
-  "claude-opus-4-6": {
+  "claude-opus-5-5": {
     routing: {
-      minimal: "claude-opus-4-6-thinking",
-      low: "claude-opus-4-6-thinking",
-      medium: "claude-opus-4-6-thinking",
-      high: "claude-opus-4-6-thinking",
+      minimal: "claude-opus-5-5-thinking",
+      low: "claude-opus-5-5-thinking",
+      medium: "claude-opus-5-5-thinking",
+      high: "claude-opus-5-5-thinking",
     },
-    defaultRequestId: "claude-opus-4-6-thinking",
+    defaultRequestId: "claude-opus-5-5-thinking",
   },
   // Live fetchAvailableModels exposes `claude-sonnet-4-6` (display: Thinking), not a separate *-thinking id.
-  "claude-sonnet-4-6": {
-    off: "claude-sonnet-4-6",
+  "claude-sonnet-5-5": {
+    off: "claude-sonnet-5-5",
     routing: {
-      minimal: "claude-sonnet-4-6",
-      low: "claude-sonnet-4-6",
-      medium: "claude-sonnet-4-6",
-      high: "claude-sonnet-4-6",
-      xhigh: "claude-sonnet-4-6",
+      minimal: "claude-sonnet-5-5",
+      low: "claude-sonnet-5-5",
+      medium: "claude-sonnet-5-5",
+      high: "claude-sonnet-5-5",
+      xhigh: "claude-sonnet-5-5",
     },
-    defaultRequestId: "claude-sonnet-4-6",
+    defaultRequestId: "claude-sonnet-5-5",
   },
   "gemini-3.1-pro": {
     // `gemini-3.1-pro-high` is advertised but currently 400s for agent streamGenerateContent;
@@ -56,6 +56,17 @@ export const ANTIGRAVITY_ROUTING: Record<string, AntigravityRouting> = {
       xhigh: "gemini-pro-agent",
     },
     defaultRequestId: "gemini-3.1-pro-low",
+  },
+  "gemini-4-argon": {
+    off: "gemini-4-argon-low",
+    routing: {
+      minimal: "gemini-4-argon-low",
+      low: "gemini-4-argon-low",
+      medium: "gemini-4-argon-medium",
+      high: "gemini-4-argon-high",
+      xhigh: "gemini-4-argon-high",
+    },
+    defaultRequestId: "gemini-4-argon-low",
   },
   "gemini-3.8-flash": {
     off: "gemini-3.8-flash-low",
@@ -119,6 +130,11 @@ export const ANTIGRAVITY_ROUTING: Record<string, AntigravityRouting> = {
  * Requesting more than these limits returns a 400 Bad Request from the API.
  */
 export const RUNTIME_MAX_OUTPUT_TOKENS: Record<string, number> = {
+  "gemini-4-argon": 65536,
+  "gemini-4-argon-low": 65536,
+  "gemini-4-argon-medium": 65536,
+  "gemini-4-argon-high": 65536,
+  "gemini-4-argon-tiered": 65536,
   "gemini-3.8-flash": 65536,
   "gemini-3.8-flash-low": 65536,
   "gemini-3.8-flash-medium": 65536,
@@ -141,9 +157,9 @@ export const RUNTIME_MAX_OUTPUT_TOKENS: Record<string, number> = {
   "gemini-3.1-pro-low": 65535,
   "gemini-3.1-pro-high": 65535,
   "gemini-pro-agent": 65535,
-  "claude-opus-4-6": 64000,
-  "claude-opus-4-6-thinking": 64000,
-  "claude-sonnet-4-6": 64000,
+  "claude-opus-5-5": 64000,
+  "claude-opus-5-5-thinking": 64000,
+  "claude-sonnet-5-5": 64000,
   "gpt-oss-120b": 32768,
   "gpt-oss-120b-medium": 32768,
 };
@@ -215,6 +231,16 @@ const thinkingLevelMaps = {
 /** Same set as `agy models`, collapsed to public Pi model IDs. */
 export const ANTIGRAVITY_MODELS: ProviderModelConfig[] = [
   {
+    id: "gemini-4-argon",
+    name: "Gemini 4 Argon (Antigravity)",
+    reasoning: true,
+    thinkingLevelMap: thinkingLevelMaps.lowMediumHigh,
+    input: ["text", "image"],
+    cost: geminiFlashCost,
+    contextWindow: 1048576,
+    maxTokens: 65536,
+  },
+  {
     id: "gemini-3.8-flash",
     name: "Gemini 3.8 Flash (Antigravity)",
     reasoning: true,
@@ -245,8 +271,8 @@ export const ANTIGRAVITY_MODELS: ProviderModelConfig[] = [
     maxTokens: 65536,
   },
   {
-    id: "claude-opus-4-6",
-    name: "Claude Opus 4.6 (Antigravity)",
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5 (Antigravity)",
     reasoning: true,
     thinkingLevelMap: thinkingLevelMaps.thinking,
     input: ["text", "image"],
@@ -255,8 +281,8 @@ export const ANTIGRAVITY_MODELS: ProviderModelConfig[] = [
     maxTokens: 64000,
   },
   {
-    id: "claude-sonnet-4-6",
-    name: "Claude Sonnet 4.6 (Antigravity)",
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5 (Antigravity)",
     reasoning: true,
     thinkingLevelMap: thinkingLevelMaps.thinking,
     input: ["text", "image"],
@@ -358,6 +384,15 @@ export function getAntigravityRequestModelId(modelId: string, effort: string | u
  * provide a fallback runtime model ID (e.g. Gemini 3.7 Flash) to maintain availability.
  */
 export function getFallbackRuntimeModel(runtimeModel: string, effort?: string): string | undefined {
+  if (runtimeModel.startsWith("gemini-4-argon-")) {
+    return runtimeModel.replace("gemini-4-argon-", "gemini-3.8-flash-");
+  }
+  if (runtimeModel === "gemini-4-argon") {
+    return "gemini-3.8-flash-low";
+  }
+  if (runtimeModel === "gemini-4-argon-tiered") {
+    return getAntigravityRequestModelId("gemini-3.8-flash", effort);
+  }
   if (runtimeModel.startsWith("gemini-3.8-flash-")) {
     return runtimeModel.replace("gemini-3.8-flash-", "gemini-3.7-flash-");
   }
@@ -379,6 +414,12 @@ export function getFallbackRuntimeModel(runtimeModel: string, effort?: string): 
 export type { ThinkingWire };
 
 export const ANTIGRAVITY_MODEL_ENUM: Record<string, string> = {
+  // Gemini 4 Argon
+  "gemini-4-argon": "MODEL_PLACEHOLDER_M318",
+  "gemini-4-argon-high": "MODEL_PLACEHOLDER_M318",
+  "gemini-4-argon-medium": "MODEL_PLACEHOLDER_M319",
+  "gemini-4-argon-low": "MODEL_PLACEHOLDER_M320",
+  "gemini-4-argon-tiered": "MODEL_PLACEHOLDER_M322",
   // Gemini 3.8 Flash
   "gemini-3.8-flash": "MODEL_PLACEHOLDER_M318",
   "gemini-3.8-flash-high": "MODEL_PLACEHOLDER_M318",
@@ -408,9 +449,9 @@ export const ANTIGRAVITY_MODEL_ENUM: Record<string, string> = {
   "gemini-3.1-pro-high": "MODEL_PLACEHOLDER_M37",
   "gemini-pro-agent": "MODEL_PLACEHOLDER_M16",
   // Claude
-  "claude-sonnet-4-6": "MODEL_PLACEHOLDER_M35",
-  "claude-opus-4-6": "MODEL_PLACEHOLDER_M26",
-  "claude-opus-4-6-thinking": "MODEL_PLACEHOLDER_M26",
+  "claude-sonnet-5-5": "MODEL_PLACEHOLDER_M35",
+  "claude-opus-5-5": "MODEL_PLACEHOLDER_M26",
+  "claude-opus-5-5-thinking": "MODEL_PLACEHOLDER_M26",
   // GPT-OSS
   "gpt-oss-120b": "MODEL_OPENAI_GPT_OSS_120B_MEDIUM",
   "gpt-oss-120b-medium": "MODEL_OPENAI_GPT_OSS_120B_MEDIUM",
