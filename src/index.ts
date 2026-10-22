@@ -7,7 +7,11 @@ import {
 
 // Namespace import: Oh My Pi rewrites this specifier onto bundled pi-ai, which
 // does not export registerApiProvider. A static named import fails plugin load.
-import * as piAiCompat from "@earendil-works/pi-ai/compat";
+import * as piAiCompatFallback from "@earendil-works/pi-ai";
+const piAiCompat = piAiCompatFallback as unknown as {
+  registerApiProvider?: CompatApiProviderRegistrar;
+  registerImagesApiProvider?: CompatImagesProviderRegistrar;
+};
 import {
   activateAccount,
   getApiKey,
